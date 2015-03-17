@@ -1,8 +1,8 @@
 # Go Session – Session in Golang
 
 
-# Example:
-Read the file：
+## Example:
+* Read the file：
     [example/test.go](example/test.go)
 
 ```go
@@ -11,7 +11,7 @@ Read the file：
     )
 ```
 
-Then in you web app init the global session adapter,it like this
+* Then in you web app init the global session adapter,it like this
 
 ```go
     var provider *gosession.Adapter
@@ -43,24 +43,34 @@ Finally in the handlerfunc you can use it like this:
 ## How to write own provider?
 ```go
     type SessionStore interface {
-        Set(key, value interface{}) // like as session.Set(Key,Value)
-        Get(key interface{}) interface{} // like as session.Get(Key) ==> value 
-        Delete(key interface{}) // like as session.Delete(Key) ===> remove map[interface{}]interface{} index for Key's data
-        SessionID() string // return SessionId,this id for start session created
-        Flush() // delete all session data
-        All() map[interface{}]interface{} // get all session data
+        // like as session.Set(Key,Value)   
+        Set(key, value interface{}) 
+        // like as session.Get(Key) ==> value 
+        Get(key interface{}) interface{} 
+        // like as session.Delete(Key) ===> remove map[interface{}]interface{} index for Key's data
+        Delete(key interface{}) 
+        // return SessionId,this id for start session created
+        SessionID() string 
+        // delete all session data
+        Flush() 
+        // get all session data
+        All() map[interface{}]interface{} 
     }
 
     // this interface for adapter
     type Provider interface {
-        InitConfig(gclifetime int64, config string) error // init provider config
-        CreateSession() (SessionStore, error) // Automatically obtain seesion worth to set the session ID
-        DestroySession(sid string) error // destroy session,such as user logout,destroy user session
-        GCSession() // Automatic collection treatment session date
+        // init provider config
+        InitConfig(gclifetime int64, config string) error 
+        // Automatically obtain seesion worth to set the session ID
+        CreateSession() (SessionStore, error) 
+        // destroy session,such as user logout,destroy user session
+        DestroySession(sid string) error 
+        // Automatic collection treatment session date
+        GCSession() 
     }
 ```
 
-#Fixd Bug
+##Fixd Bug
 
     2015-03-17
         * fixed session id created
@@ -68,13 +78,13 @@ Finally in the handlerfunc you can use it like this:
         * fixed read and write session file(io)
 
 
-# Refer
-    [golang manual](http://golang.org)
-    [beego framework](http://beego.me)-[github](https://github.com/astaxie/beego)
-    [build web application with golang](https://github.com/astaxie/build-web-application-with-golang/blob/master/zh/06.1.md)
-    [martini-contrib/sessions](https://github.com/martini-contrib/sessions)
+## Refer
+*    [golang manual](http://golang.org)
+*    [beego framework](http://beego.me)-[github](https://github.com/astaxie/beego)
+*    [build web application with golang](https://github.com/astaxie/build-web-application-with-golang/blob/master/zh/06.1.md)
+*    [martini-contrib/sessions](https://github.com/martini-contrib/sessions)
 
-# License
+## License
 
 Structre Record is released under the GPLV3 license:
     [License](https://github.com/wackonline/structrecord/blob/master/LICENSE)
