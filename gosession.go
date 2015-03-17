@@ -1,8 +1,7 @@
 package gosession
 
 import (
-	"crypto/rand"
-	"crypto/sha1"
+	"crypto/md5"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -19,7 +18,6 @@ var adapter = make(map[string]Provider)
 //
 const (
 	SECURE           bool   = true
-	SECURESTR        string = "2e4f726e63801dcb5e98a024fb330ac9"
 	COOKIENAME       string = "gosession"
 	LIFETIME         int64  = 3600
 	SESSIONIDLENGTH  int64  = 16
@@ -39,7 +37,7 @@ type SessionStore interface {
 // this interface for adapter
 type Provider interface {
 	InitConfig(gclifetime int64, config string) error
-	CreateSession(sid string) (SessionStore, error)
+	CreateSession() (SessionStore, error)
 	DestroySession(sid string) error
 	GCSession()
 }
@@ -71,10 +69,12 @@ func Register(provider string, store Provider) {
 
 // Using the sha1 gave only calculate the string
 func Secure(str string, length int64) string {
-	str += SECURESTR
-	s := sha1.New()
-	newstr := s.Sum([]byte(str))
-	return hex.EncodeToString(newstr[0:length])
+	str += COOKIENAME
+	nstr := []byte(str)
+	// sster := append(, []byte(SECURESTR))
+	s := md5.New()
+	newstr := s.Sum(nstr)
+	return hex.EncodeToString(newstr[0:COOKIENAMELENGHT])
 }
 
 // auto collection session
@@ -85,32 +85,20 @@ func (adapter *Adapter) gc() {
 	time.AfterFunc(time.Duration(adapter.config.Gctime)*time.Second, func() { adapter.gc() })
 }
 
-func (adapter *Adapter) sessionId(id string) (string, error) {
-	n, err := rand.Read([]byte(id)) //rand read id string
-	if n != len(id) || err != nil {
-		return "", fmt.Errorf("Could not successfully read from the system CSPRNG.")
-	}
-	//string encode
-	s := sha1.New()
-	newid := s.Sum([]byte(id))
-	//Take (adapter.config.SessionIdLength) bit string
-	return hex.EncodeToString(newid[0:adapter.config.SessionIdLength]), nil
-}
-
 // Start seesion service
 // The default is not started,Use session must be started manually
 //
 func (adapter *Adapter) StartSession(w http.ResponseWriter, r *http.Request) (store SessionStore, err error) {
 	// Use the user-agent client value is encrypted to prevent session hijacked
-	cookiename := Secure(r.Header.Get("User-Agent")+adapter.config.CookieName, COOKIENAMELENGHT)
+	cookiename := Secure(r.Header.Get("User-Agent"), COOKIENAMELENGHT)
 	cookie, errs := r.Cookie(cookiename)
 	if errs != nil || cookie.Value == "" {
-		//
-		sid, errs := adapter.sessionId(cookiename)
-		if errs != nil {
-			return nil, errs
+		store, err = adapter.store.CreateSession()
+		sid := store.SessionID()
+		if sid == "" {
+			sid = Secure(sid, SESSIONIDLENGTH)
 		}
-		store, err = adapter.store.CreateSession(sid)
+
 		cookie = &http.Cookie{Name: cookiename,
 			Value:    url.QueryEscape(sid),
 			Path:     "/",

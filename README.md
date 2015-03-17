@@ -54,14 +54,22 @@ Finally in the handlerfunc you can use it like this:
     // this interface for adapter
     type Provider interface {
         InitConfig(gclifetime int64, config string) error // init provider config
-        CreateSession(sid string) (SessionStore, error) // Create session by provider,such as **file**,it's mkdir path.
+        CreateSession() (SessionStore, error) // Automatically obtain seesion worth to set the session ID
         DestroySession(sid string) error // destroy session,such as user logout,destroy user session
         GCSession() // Automatic collection treatment session date
     }
 ```
 
+#Fixd Bug
+
+    2015-03-17
+        * fixed session id created
+        * fixed get session bug
+        * fixed read and write session file(io)
+
+
 # Refer
-    [golang manual][http://golang.org]
+    [golang manual](http://golang.org)
     [beego framework](http://beego.me)-[github](https://github.com/astaxie/beego)
     [build web application with golang](https://github.com/astaxie/build-web-application-with-golang/blob/master/zh/06.1.md)
     [martini-contrib/sessions](https://github.com/martini-contrib/sessions)

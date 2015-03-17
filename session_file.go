@@ -5,6 +5,7 @@ import (
 	"crypto/md5"
 	"encoding/gob"
 	"encoding/hex"
+	// "fmt"
 	"io/ioutil"
 	"os"
 	"path"
@@ -42,7 +43,8 @@ func (fs *FileSessionStore) Set(key, value interface{}) {
 	tmp[key] = value
 	if b := fileProvder.isWriteFile(tmp); b {
 		fs.values[key] = value
-		fileProvder.writeFile(path.Join(fileProvder.savePath, fileProvder.sessionFileName(fs.sid)), fs.values)
+		fs.sid = fileProvder.sessionFileName(fileProvder.encode(fs.values))
+		fileProvder.writeFile(path.Join(fileProvder.savePath, fs.sid), fs.values)
 
 	}
 
@@ -55,7 +57,7 @@ func (fs *FileSessionStore) Get(key interface{}) interface{} {
 	if v, ok := fs.values[key]; ok {
 		return v
 	} else {
-		p := path.Join(fileProvder.savePath, fileProvder.sessionFileName(fs.sid))
+		p := path.Join(fileProvder.savePath, fs.sid)
 		if b := fileProvder.isFile(p); b {
 			result, err := fileProvder.readFile(p)
 			if err == nil {
@@ -77,7 +79,8 @@ func (fs *FileSessionStore) Delete(key interface{}) {
 	delete(tmp, key)
 	if b := fileProvder.isWriteFile(tmp); b {
 		delete(fs.values, key)
-		fileProvder.writeFile(path.Join(fileProvder.savePath, fileProvder.sessionFileName(fs.sid)), fs.values)
+		fs.sid = fileProvder.sessionFileName(fileProvder.encode(fs.values))
+		fileProvder.writeFile(path.Join(fileProvder.savePath, fs.sid), fs.values)
 	}
 
 }
@@ -87,6 +90,7 @@ func (fs *FileSessionStore) Flush() {
 	fs.lock.Lock()
 	defer fs.lock.Unlock()
 	fs.values = make(map[interface{}]interface{})
+	fs.sid = fileProvder.sessionFileName(fileProvder.encode(fs.values))
 }
 
 // return all in file session
@@ -117,14 +121,13 @@ func (fp *FileProvider) InitConfig(expirestime int64, savePath string) error {
 // }
 
 // create an session
-func (fp *FileProvider) CreateSession(sid string) (SessionStore, error) {
+func (fp *FileProvider) CreateSession() (SessionStore, error) {
 
 	fileProvder.lock.Lock()
 	defer fileProvder.lock.Unlock()
 	//var kv map[interface{}]interface{}
 	kv := make(map[interface{}]interface{})
-	session := &FileSessionStore{sid: sid, values: kv}
-	fp.savePath = path.Join(fp.savePath, sid)
+	session := &FileSessionStore{sid: "", values: kv}
 	return session, os.MkdirAll(fp.savePath, 0655)
 }
 
@@ -182,13 +185,15 @@ func (fp *FileProvider) writeFile(path string, data map[interface{}]interface{})
 
 // Assert whether to write the data
 func (fp *FileProvider) isWriteFile(kv map[interface{}]interface{}) bool {
-	s := md5.New()
-	s.Write([]byte(fp.encode(kv)))
-	newstr := hex.EncodeToString(s.Sum(nil))
+	// s := md5.New()
+	// s.Write([]byte(fp.encode(kv)))
+	// newstr := hex.EncodeToString(s.Sum(nil))
+	err := fp.isFile(path.Join(fileProvder.savePath, fp.sessionFileName(fileProvder.encode(kv))))
 	//Compare the new value and old values are equal
-	if md5values != newstr {
-		md5values = newstr
+	if !err {
+		// md5values = newstr
 		// If err equals nil , MD5 value is different
+
 		return true
 	}
 	return false
@@ -196,10 +201,9 @@ func (fp *FileProvider) isWriteFile(kv map[interface{}]interface{}) bool {
 }
 
 //Use md5 generate session file name
-func (fp *FileProvider) sessionFileName(str string) string {
+func (fp *FileProvider) sessionFileName(str []byte) string {
 	s := md5.New()
-	s.Write([]byte(str))
-	return hex.EncodeToString(s.Sum(nil))
+	return hex.EncodeToString(s.Sum(str[15:20]))
 }
 
 //The structure of map encryption

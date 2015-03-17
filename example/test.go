@@ -36,13 +36,15 @@ func (p *MyMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func hello(w http.ResponseWriter, r *http.Request) {
-	session.Delete("hello")
+	k := r.FormValue("key")
+	session.Delete("hello" + k)
 	fmt.Fprintf(w, "format, ...")
 }
 
 func hi(w http.ResponseWriter, r *http.Request) {
 	// var c map[interface{}]interface{}
-	nh1 := session.Get("hello")
+	k := r.FormValue("key")
+	nh1 := session.Get("hello" + k)
 	fmt.Fprintln(w, nh1)
 	// c = session.All()
 
@@ -51,10 +53,10 @@ func hi(w http.ResponseWriter, r *http.Request) {
 }
 
 func sayhelloName(w http.ResponseWriter, r *http.Request) {
+	k := r.FormValue("key")
+	session.Set("hello"+k, "hello world!..."+k)
 
-	session.Set("hello", "hello world!...")
-
-	fmt.Fprintln(w, "================")
+	fmt.Fprintln(w, "================", r.Header.Get("User-Agent"))
 }
 func main() {
 
